@@ -1,1 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>QR Сканер</title>
+
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      color: #222;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      font-size: 17px;
+      border: 1px solid #bbb;
+      border-radius: 7px;
+      margin-bottom: 15px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      background: #1976d2;
+      color: white;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 15px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .counter {
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    .status {
+      text-align: center;
+      padding: 14px;
+      border-radius: 7px;
+      margin-top: 15px;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    .success {
+      background: #d9f7df;
+      color: #176b2c;
+    }
+
+    .error {
+      background: #ffdede;
+      color: #a00000;
+    }
+
+    .warning {
+      background: #fff0c2;
+      color: #795600;
+    }
+
+    .info {
+      background: #e0ecff;
+      color: #174d9c;
+    }
+
+    .session-info {
+      text-align: center;
+      font-size: 17px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>QR Сканер</h1>
+
+  <!-- ПАРОЛЬ -->
+
+  <div id="loginScreen" class="card">
+
+    <label for="password">Пароль</label>
+
+    <input
+      type="password"
+      id="password"
+      placeholder="Введите пароль"
+      autocomplete="off"
+    >
+
+    <button onclick="login()">
+      Войти
+    </button>
+
+    <div id="loginStatus"></div>
+
+  </div>
+
+
+  <!-- ДАННЫЕ ИСПОЛНИТЕЛЯ -->
+
+  <div id="workerScreen" class="card hidden">
+
+    <h2>Данные исполнителя</h2>
+
+    <label for="executor">
+      Имя исполнителя
+    </label>
+
+    <input
+      type="text"
+      id="executor"
+      placeholder="Введите имя"
+      autocomplete="off"
+    >
+
+    <label for="du">
+      ДУ прибора
+    </label>
+
+    <input
+      type="text"
+      id="du"
+      placeholder="Введите ДУ"
+      autocomplete="off"
+    >
+
+    <button onclick="startScanner()">
+      Начать сканирование
+    </button>
+
+    <div id="workerStatus"></div>
+
+  </div>
+
+
+  <!-- СКАНЕР -->
+
+  <div id="scannerScreen" class="hidden">
+
+    <div class="card">
+
+      <div class="session-info">
+
+        Исполнитель:
+        <strong id="executorDisplay"></strong>
+
+        <br>
+
+        ДУ:
+        <strong id="duDisplay"></strong>
+
+      </div>
+
+
+      <div class="counter">
+
+        Отсканировано:
+        <span id="counter">0</span>
+
+      </div>
+
+
+      <div id="reader"></div>
+
+      <div id="scanStatus"></div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  // =====================================================
+  // URL GOOGLE APPS SCRIPT
+  // =====================================================
+
+  const GOOGLE_SCRIPT_URL =
+    'https://script.google.com/macros/s/AKfycby5GSmAT8_eINQTh7ToOjli0urAyAmk8L2Ia1nkkNRrTXs-gyS_A08-QzMpgcPveWC2zA/exec';
+
+
+  // =====================================================
+  // ПЕРЕМЕННЫЕ
+  // =====================================================
+
+  let executor = '';
+
+  let du = '';
+
+  let scanner = null;
+
+  let processingScan = false;
+
+  let scanCount = 0;
+
+
+  // =====================================================
+  // ОБЩИЙ ЗАПРОС К GOOGLE APPS SCRIPT
+  // =====================================================
+
+  async function callGoogleScript(action, data = {}) {
+
+    const params = new URLSearchParams();
+
+    params.append('action', action);
+
+    Object.keys(data).forEach(function(key) {
+
+      params.append(key, data[key]);
+
+    });
+
+
+    const response = await fetch(
+      GOOGLE_SCRIPT_URL + '?' + params.toString(),
+      {
+        method: 'GET',
+        cache: 'no-store'
+      }
+    );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        'Ошибка соединения с Google Apps Script'
+      );
+
+    }
+
+
+    return await response.json();
+
+  }
+
+
+  // =====================================================
+  // ВХОД ПО ПАРОЛЮ
+  // =====================================================
+
+  async function login() {
+
+    const password =
+      document
+        .getElementById('password')
+        .value
+        .trim();
+
+
+    if (!password) {
+
+      showStatus(
+        'loginStatus',
+        'Введите пароль.',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      const result =
+        await callGoogleScript(
+          'checkPassword',
+          {
+            password: password
+          }
+        );
+
+
+      if (result.success) {
+
+        document
+          .getElementById('loginScreen')
+          .classList.add('hidden');
+
+
+        document
+          .getElementById('workerScreen')
+          .classList.remove('hidden');
+
+      } else {
+
+        showStatus(
+          'loginStatus',
+          'Неверный пароль.',
+          'error'
+        );
+
+      }
+
+    } catch (error) {
+
+      showStatus(
+        'loginStatus',
+        'Ошибка соединения: ' + error.message,
+        'error'
+      );
+
+    }
+
+  }
+
+
+  // =====================================================
+  // НАЧАЛО СКАНИРОВАНИЯ
+  // =====================================================
+
+  async function startScanner() {
+
+    executor =
+      document
+        .getElementById('executor')
+        .value
+        .trim();
+
+
+    du =
+      document
+        .getElementById('du')
+        .value
+        .trim();
+
+
+    if (!executor) {
+
+      showStatus(
+        'workerStatus',
+        'Введите имя исполнителя.',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    if (!du) {
+
+      showStatus(
+        'workerStatus',
+        'Введите ДУ прибора.',
+        'error'
+      );
+
+      return;
+
+    }
+
+
+    document
+      .getElementById('workerScreen')
+      .classList.add('hidden');
+
+
+    document
+      .getElementById('scannerScreen')
+      .classList.remove('hidden');
+
+
+    document
+      .getElementById('executorDisplay')
+      .textContent = executor;
+
+
+    document
+      .getElementById('duDisplay')
+      .textContent = du;
+
+
+    await loadCounter();
+
+    startQrScanner();
+
+  }
+
+
+  // =====================================================
+  // ПОЛУЧАЕМ СЧЁТЧИК
+  // =====================================================
+
+  async function loadCounter() {
+
+    try {
+
+      const result =
+        await callGoogleScript(
+          'getScanCount'
+        );
+
+
+      if (result.success) {
+
+        scanCount = result.count;
+
+        document
+          .getElementById('counter')
+          .textContent = scanCount;
+
+      }
+
+    } catch (error) {
+
+      showStatus(
+        'scanStatus',
+        'Не удалось получить счётчик.',
+        'error'
+      );
+
+    }
+
+  }
+
+
+  // =====================================================
+  // ЗАПУСК QR СКАНЕРА
+  // =====================================================
+
+  async function startQrScanner() {
+
+    scanner =
+      new Html5Qrcode('reader');
+
+
+    const config = {
+
+      fps: 10,
+
+      qrbox: function(
+        viewfinderWidth,
+        viewfinderHeight
+      ) {
+
+        const minEdge =
+          Math.min(
+            viewfinderWidth,
+            viewfinderHeight
+          );
+
+
+        const size =
+          Math.floor(minEdge * 0.7);
+
+
+        return {
+          width: size,
+          height: size
+        };
+
+      }
+
+    };
+
+
+    try {
+
+      await scanner.start(
+        {
+          facingMode: 'environment'
+        },
+
+        config,
+
+        onScanSuccess,
+
+        onScanFailure
+
+      );
+
+
+    } catch (error) {
+
+      showStatus(
+        'scanStatus',
+        'Не удалось получить доступ к камере: ' +
+        error,
+        'error'
+      );
+
+    }
+
+  }
+
+
+  // =====================================================
+  // УСПЕШНОЕ СКАНИРОВАНИЕ
+  // =====================================================
+
+  async function onScanSuccess(decodedText) {
+
+    if (processingScan) {
+
+      return;
+
+    }
+
+
+    processingScan = true;
+
+
+    const serialNumber =
+      String(decodedText || '')
+        .trim();
+
+
+    if (!serialNumber) {
+
+      processingScan = false;
+
+      return;
+
+    }
+
+
+    showStatus(
+      'scanStatus',
+      'Проверяем: ' + serialNumber,
+      'info'
+    );
+
+
+    try {
+
+      const result =
+        await callGoogleScript(
+          'addScan',
+          {
+            serialNumber: serialNumber,
+            du: du,
+            executor: executor
+          }
+        );
+
+
+      if (result.success) {
+
+        scanCount = result.count;
+
+
+        document
+          .getElementById('counter')
+          .textContent = scanCount;
+
+
+        showStatus(
+          'scanStatus',
+          '✓ Код добавлен: ' +
+          result.serialNumber,
+          'success'
+        );
+
+
+      } else if (result.duplicate) {
+
+        showStatus(
+          'scanStatus',
+          '⚠ Этот серийный номер уже был отсканирован: ' +
+          result.serialNumber,
+          'warning'
+        );
+
+
+      } else {
+
+        showStatus(
+          'scanStatus',
+          result.message,
+          'error'
+        );
+
+      }
+
+
+    } catch (error) {
+
+      showStatus(
+        'scanStatus',
+        'Ошибка соединения: ' +
+        error.message,
+        'error'
+      );
+
+    }
+
+
+    processingScan = false;
+
+  }
+
+
+  // =====================================================
+  // ОШИБКИ СКАНИРОВАНИЯ
+  // =====================================================
+
+  function onScanFailure(error) {
+
+    // Ничего не выводим.
+    // Пока камера ищет QR-код,
+    // такие ошибки возникают постоянно.
+
+  }
+
+
+  // =====================================================
+  // СООБЩЕНИЯ
+  // =====================================================
+
+  function showStatus(
+    elementId,
+    message,
+    type
+  ) {
+
+    const element =
+      document.getElementById(elementId);
+
+
+    element.className =
+      'status ' + type;
+
+
+    element.textContent =
+      message;
+
+  }
+
+</script>
+
+</body>
+</html>
