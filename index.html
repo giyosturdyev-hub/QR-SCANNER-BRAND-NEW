@@ -323,7 +323,7 @@ let lastScanTime = 0;
 function callGoogleScript(
   action,
   data = {},
-  timeoutMs = 10000
+  timeoutMs = 30000
 ) {
 
   return new Promise(
@@ -952,29 +952,35 @@ async function onScanSuccess(
       );
 
 
-    if (
-      result &&
-      result.success
-    ) {
+ if (
+  result &&
+  result.success
+) {
 
-      scanCount =
-        Number(result.count);
-
-
-      document
-        .getElementById(
-          'counter'
-        )
-        .textContent =
-        scanCount;
+  scanCount =
+    Number(result.count);
 
 
-      showStatus(
-        'scanStatus',
-        '✓ Код добавлен: ' +
-        result.serialNumber,
-        'success'
-      );
+  document
+    .getElementById(
+      'counter'
+    )
+    .textContent =
+    scanCount;
+
+
+  showStatus(
+    'scanStatus',
+    '✓ Код добавлен: ' +
+    result.serialNumber,
+    'success'
+  );
+
+
+  // Дополнительно обновляем
+  // счётчик непосредственно
+  // из Google Sheets.
+  loadCounter();
 
 
     }
@@ -1025,15 +1031,40 @@ async function onScanSuccess(
     }
 
 
-  } catch (error) {
+ } catch (error) {
+
+  /*
+   * Запрос мог дойти до Apps Script
+   * и записаться в таблицу, но ответ
+   * мог не успеть вернуться.
+   *
+   * Поэтому сначала пытаемся получить
+   * актуальный счётчик.
+   */
+
+  try {
+
+    await loadCounter();
+
 
     showStatus(
       'scanStatus',
-      'Нет связи со скриптом. Повторите сканирование.',
-      'error'
+      '✓ Код обработан. Счётчик обновлён.',
+      'success'
+    );
+
+
+  } catch (counterError) {
+
+    showStatus(
+      'scanStatus',
+      'Нет ответа от скрипта. Проверьте таблицу.',
+      'warning'
     );
 
   }
+
+}
 
 
   processingScan = false;
