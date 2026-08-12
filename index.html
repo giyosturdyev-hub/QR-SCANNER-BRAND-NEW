@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
@@ -11,10 +12,10 @@
 
   <script
     src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
-    type="text/javascript"
   ></script>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -29,7 +30,7 @@
 
     .container {
       max-width: 600px;
-      margin: 0 auto;
+      margin: auto;
     }
 
     h1 {
@@ -38,7 +39,7 @@
     }
 
     .card {
-      background: #fff;
+      background: white;
       padding: 18px;
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,.1);
@@ -46,8 +47,8 @@
     }
 
     h2 {
-      margin-top: 0;
       text-align: center;
+      margin-top: 0;
     }
 
     label {
@@ -75,8 +76,8 @@
       color: white;
     }
 
-    button:active {
-      opacity: .8;
+    button:disabled {
+      opacity: .6;
     }
 
     .hidden {
@@ -102,7 +103,14 @@
     }
 
     #reader video {
+      width: 100% !important;
       border-radius: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      margin-top: 10px;
+      color: #555;
     }
 
     .status {
@@ -134,14 +142,9 @@
       color: #174d9c;
     }
 
-    .loading {
-      text-align: center;
-      margin-top: 10px;
-      color: #555;
-      font-size: 14px;
-    }
   </style>
 </head>
+
 
 <body>
 
@@ -149,11 +152,19 @@
 
   <h1>QR Сканер</h1>
 
-  <!-- LOGIN -->
 
-  <div id="loginScreen" class="card">
+  <!-- ========================= -->
+  <!-- ПАРОЛЬ -->
+  <!-- ========================= -->
 
-    <label for="password">Пароль</label>
+  <div
+    id="loginScreen"
+    class="card"
+  >
+
+    <label for="password">
+      Пароль
+    </label>
 
     <input
       id="password"
@@ -162,7 +173,10 @@
       autocomplete="off"
     >
 
-    <button id="loginButton" onclick="login()">
+    <button
+      id="loginButton"
+      onclick="login()"
+    >
       Войти
     </button>
 
@@ -171,11 +185,19 @@
   </div>
 
 
-  <!-- WORKER -->
+  <!-- ========================= -->
+  <!-- ИСПОЛНИТЕЛЬ -->
+  <!-- ========================= -->
 
-  <div id="workerScreen" class="card hidden">
+  <div
+    id="workerScreen"
+    class="card hidden"
+  >
 
-    <h2>Данные исполнителя</h2>
+    <h2>
+      Данные исполнителя
+    </h2>
+
 
     <label for="executor">
       Имя исполнителя
@@ -188,6 +210,7 @@
       autocomplete="off"
     >
 
+
     <label for="du">
       ДУ прибора
     </label>
@@ -199,7 +222,10 @@
       autocomplete="off"
     >
 
-    <button onclick="startScanner()">
+
+    <button
+      onclick="startScanner()"
+    >
       Начать сканирование
     </button>
 
@@ -208,9 +234,14 @@
   </div>
 
 
-  <!-- SCANNER -->
+  <!-- ========================= -->
+  <!-- СКАНЕР -->
+  <!-- ========================= -->
 
-  <div id="scannerScreen" class="hidden">
+  <div
+    id="scannerScreen"
+    class="hidden"
+  >
 
     <div class="card">
 
@@ -226,16 +257,25 @@
 
       </div>
 
+
       <div class="counter">
+
         Отсканировано:
         <span id="counter">0</span>
+
       </div>
+
 
       <div id="reader"></div>
 
-      <div id="scannerLoading" class="loading">
+
+      <div
+        id="scannerLoading"
+        class="loading"
+      >
         Запуск камеры...
       </div>
+
 
       <div id="scanStatus"></div>
 
@@ -248,375 +288,537 @@
 
 <script>
 
-  // =====================================================
-  // GOOGLE APPS SCRIPT
-  // =====================================================
 
-  const GOOGLE_SCRIPT_URL =
-    'https://script.google.com/macros/s/AKfycby5GSmAT8_eINQTh7ToOjli0urAyAmk8L2Ia1nkkNRrTXs-gyS_A08-QzMpgcPveWC2zA/exec';
+// =====================================================
+// GOOGLE APPS SCRIPT
+// =====================================================
 
-
-  // =====================================================
-  // ПЕРЕМЕННЫЕ
-  // =====================================================
-
-  let executor = '';
-
-  let du = '';
-
-  let scanner = null;
-
-  let processingScan = false;
-
-  let scanCount = 0;
-
-  let lastScannedText = '';
-
-  let lastScanTime = 0;
+const GOOGLE_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycby5GSmAT8_eINQTh7ToOjli0urAyAmk8L2Ia1nkkNRrTXs-gyS_A08-QzMpgcPveWC2zA/exec';
 
 
-  // =====================================================
-  // ЗАПРОС К GOOGLE APPS SCRIPT
-  // =====================================================
+// =====================================================
+// ПЕРЕМЕННЫЕ
+// =====================================================
 
-  async function callGoogleScript(action, data = {}) {
+let executor = '';
 
-    const params = new URLSearchParams();
+let du = '';
 
-    params.set('action', action);
+let scanner = null;
 
-    Object.keys(data).forEach(function(key) {
+let processingScan = false;
 
-      params.set(key, data[key]);
+let scanCount = 0;
 
-    });
+let lastScannedText = '';
 
-
-    const controller =
-      new AbortController();
+let lastScanTime = 0;
 
 
-    const timeout =
-      setTimeout(function() {
+// =====================================================
+// JSONP ЗАПРОС
+// =====================================================
 
-        controller.abort();
+function callGoogleScript(
+  action,
+  data = {},
+  timeoutMs = 10000
+) {
 
-      }, 10000);
+  return new Promise(
+    function(resolve, reject) {
 
-
-    try {
-
-      const response =
-        await fetch(
-          GOOGLE_SCRIPT_URL +
-          '?' +
-          params.toString(),
-          {
-            method: 'GET',
-            cache: 'no-store',
-            signal: controller.signal
-          }
+      const callbackName =
+        'googleCallback_' +
+        Date.now() +
+        '_' +
+        Math.floor(
+          Math.random() * 100000
         );
 
 
-      if (!response.ok) {
+      const script =
+        document.createElement('script');
 
-        throw new Error(
-          'HTTP ' + response.status
-        );
 
-      }
+      let finished = false;
 
 
-      return await response.json();
+      function cleanup() {
 
-    } finally {
+        if (script.parentNode) {
 
-      clearTimeout(timeout);
-
-    }
-
-  }
-
-
-  // =====================================================
-  // ВХОД
-  // =====================================================
-
-  async function login() {
-
-    const password =
-      document
-        .getElementById('password')
-        .value
-        .trim();
-
-
-    if (!password) {
-
-      showStatus(
-        'loginStatus',
-        'Введите пароль.',
-        'error'
-      );
-
-      return;
-
-    }
-
-
-    const button =
-      document.getElementById('loginButton');
-
-
-    button.disabled = true;
-
-    button.textContent = 'Проверка...';
-
-
-    try {
-
-      const result =
-        await callGoogleScript(
-          'checkPassword',
-          {
-            password: password
-          }
-        );
-
-
-      if (result.success) {
-
-        document
-          .getElementById('loginScreen')
-          .classList.add('hidden');
-
-
-        document
-          .getElementById('workerScreen')
-          .classList.remove('hidden');
-
-
-      } else {
-
-        showStatus(
-          'loginStatus',
-          'Неверный пароль.',
-          'error'
-        );
-
-      }
-
-
-    } catch (error) {
-
-      showStatus(
-        'loginStatus',
-        'Нет связи со скриптом. Повторите попытку.',
-        'error'
-      );
-
-    } finally {
-
-      button.disabled = false;
-
-      button.textContent = 'Войти';
-
-    }
-
-  }
-
-
-  // =====================================================
-  // НАЧАЛО СКАНИРОВАНИЯ
-  // =====================================================
-
-  function startScanner() {
-
-    executor =
-      document
-        .getElementById('executor')
-        .value
-        .trim();
-
-
-    du =
-      document
-        .getElementById('du')
-        .value
-        .trim();
-
-
-    if (!executor) {
-
-      showStatus(
-        'workerStatus',
-        'Введите имя исполнителя.',
-        'error'
-      );
-
-      return;
-
-    }
-
-
-    if (!du) {
-
-      showStatus(
-        'workerStatus',
-        'Введите ДУ прибора.',
-        'error'
-      );
-
-      return;
-
-    }
-
-
-    document
-      .getElementById('workerScreen')
-      .classList.add('hidden');
-
-
-    document
-      .getElementById('scannerScreen')
-      .classList.remove('hidden');
-
-
-    document
-      .getElementById('executorDisplay')
-      .textContent = executor;
-
-
-    document
-      .getElementById('duDisplay')
-      .textContent = du;
-
-
-    /*
-      ВАЖНО:
-
-      Камеру запускаем СРАЗУ.
-
-      Счётчик запрашиваем параллельно.
-    */
-
-    startQrScanner();
-
-    loadCounter();
-
-  }
-
-
-  // =====================================================
-  // ЗАГРУЗКА СЧЁТЧИКА
-  // =====================================================
-
-  async function loadCounter() {
-
-    try {
-
-      const result =
-        await callGoogleScript(
-          'getScanCount'
-        );
-
-
-      if (result.success) {
-
-        scanCount =
-          Number(result.count) || 0;
-
-
-        document
-          .getElementById('counter')
-          .textContent =
-          scanCount;
-
-      }
-
-    } catch (error) {
-
-      /*
-        Камера продолжает работать,
-        даже если Google временно недоступен.
-      */
-
-      showStatus(
-        'scanStatus',
-        'Счётчик временно не обновился.',
-        'warning'
-      );
-
-    }
-
-  }
-
-
-  // =====================================================
-  // ЗАПУСК КАМЕРЫ
-  // =====================================================
-
-  async function startQrScanner() {
-
-    if (scanner) {
-
-      try {
-
-        await scanner.stop();
-
-      } catch (e) {
-
-        // ничего
-
-      }
-
-      scanner = null;
-
-    }
-
-
-    scanner =
-      new Html5Qrcode('reader');
-
-
-    const config = {
-
-      fps: 8,
-
-      qrbox: function(
-        width,
-        height
-      ) {
-
-        const size =
-          Math.floor(
-            Math.min(width, height) * 0.65
+          script.parentNode.removeChild(
+            script
           );
 
+        }
 
-        return {
-          width: size,
-          height: size
+
+        try {
+
+          delete window[callbackName];
+
+        } catch (e) {
+
+          window[callbackName] =
+            undefined;
+
+        }
+
+      }
+
+
+      const timer =
+        setTimeout(
+          function() {
+
+            if (finished) {
+              return;
+            }
+
+            finished = true;
+
+            cleanup();
+
+            reject(
+              new Error(
+                'Timeout'
+              )
+            );
+
+          },
+          timeoutMs
+        );
+
+
+      window[callbackName] =
+        function(result) {
+
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+
+          clearTimeout(timer);
+
+          cleanup();
+
+          resolve(result);
+
         };
 
+
+      const params =
+        new URLSearchParams();
+
+
+      params.set(
+        'action',
+        action
+      );
+
+
+      params.set(
+        'callback',
+        callbackName
+      );
+
+
+      Object.keys(data).forEach(
+        function(key) {
+
+          params.set(
+            key,
+            data[key]
+          );
+
+        }
+      );
+
+
+      script.src =
+        GOOGLE_SCRIPT_URL +
+        '?' +
+        params.toString();
+
+
+      script.async = true;
+
+
+      script.onerror =
+        function() {
+
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+
+          clearTimeout(timer);
+
+          cleanup();
+
+          reject(
+            new Error(
+              'Network error'
+            )
+          );
+
+        };
+
+
+      document
+        .head
+        .appendChild(script);
+
+    }
+  );
+
+}
+
+
+// =====================================================
+// ВХОД
+// =====================================================
+
+async function login() {
+
+  const password =
+    document
+      .getElementById('password')
+      .value
+      .trim();
+
+
+  if (!password) {
+
+    showStatus(
+      'loginStatus',
+      'Введите пароль.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  const button =
+    document
+      .getElementById('loginButton');
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Проверка...';
+
+
+  try {
+
+    const result =
+      await callGoogleScript(
+        'checkPassword',
+        {
+          password: password
+        }
+      );
+
+
+    if (
+      result &&
+      result.success
+    ) {
+
+      document
+        .getElementById(
+          'loginScreen'
+        )
+        .classList
+        .add('hidden');
+
+
+      document
+        .getElementById(
+          'workerScreen'
+        )
+        .classList
+        .remove('hidden');
+
+
+    } else {
+
+      showStatus(
+        'loginStatus',
+        'Неверный пароль.',
+        'error'
+      );
+
+    }
+
+
+  } catch (error) {
+
+    showStatus(
+      'loginStatus',
+      'Нет связи со скриптом. Повторите попытку.',
+      'error'
+    );
+
+  } finally {
+
+    button.disabled = false;
+
+    button.textContent =
+      'Войти';
+
+  }
+
+}
+
+
+// =====================================================
+// НАЧАЛО СКАНИРОВАНИЯ
+// =====================================================
+
+function startScanner() {
+
+  executor =
+    document
+      .getElementById('executor')
+      .value
+      .trim();
+
+
+  du =
+    document
+      .getElementById('du')
+      .value
+      .trim();
+
+
+  if (!executor) {
+
+    showStatus(
+      'workerStatus',
+      'Введите имя исполнителя.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  if (!du) {
+
+    showStatus(
+      'workerStatus',
+      'Введите ДУ прибора.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  document
+    .getElementById(
+      'workerScreen'
+    )
+    .classList
+    .add('hidden');
+
+
+  document
+    .getElementById(
+      'scannerScreen'
+    )
+    .classList
+    .remove('hidden');
+
+
+  document
+    .getElementById(
+      'executorDisplay'
+    )
+    .textContent =
+    executor;
+
+
+  document
+    .getElementById(
+      'duDisplay'
+    )
+    .textContent =
+    du;
+
+
+  /*
+   * Камера запускается СРАЗУ.
+   */
+
+  startQrScanner();
+
+
+  /*
+   * Счётчик запрашивается
+   * отдельно и не блокирует камеру.
+   */
+
+  loadCounter();
+
+}
+
+
+// =====================================================
+// СЧЁТЧИК
+// =====================================================
+
+async function loadCounter() {
+
+  try {
+
+    const result =
+      await callGoogleScript(
+        'getScanCount'
+      );
+
+
+    if (
+      result &&
+      result.success
+    ) {
+
+      scanCount =
+        Number(result.count) || 0;
+
+
+      document
+        .getElementById(
+          'counter'
+        )
+        .textContent =
+        scanCount;
+
+    }
+
+
+  } catch (error) {
+
+    /*
+     * Камеру не останавливаем.
+     */
+
+  }
+
+}
+
+
+// =====================================================
+// ЗАПУСК КАМЕРЫ
+// =====================================================
+
+async function startQrScanner() {
+
+  if (scanner) {
+
+    try {
+
+      await scanner.stop();
+
+    } catch (e) {}
+
+    scanner = null;
+
+  }
+
+
+  scanner =
+    new Html5Qrcode(
+      'reader'
+    );
+
+
+  const config = {
+
+    fps: 8,
+
+    qrbox: function(
+      width,
+      height
+    ) {
+
+      const size =
+        Math.floor(
+          Math.min(
+            width,
+            height
+          ) * 0.65
+        );
+
+
+      return {
+        width: size,
+        height: size
+      };
+
+    },
+
+    aspectRatio: 1.0,
+
+    disableFlip: false
+
+  };
+
+
+  try {
+
+    await scanner.start(
+
+      {
+        facingMode: {
+          exact: 'environment'
+        }
       },
 
-      aspectRatio: 1.0,
+      config,
 
-      disableFlip: false
+      onScanSuccess,
 
-    };
+      onScanFailure
 
+    );
+
+
+    document
+      .getElementById(
+        'scannerLoading'
+      )
+      .classList
+      .add('hidden');
+
+
+    showStatus(
+      'scanStatus',
+      'Камера готова. Наведите её на QR-код.',
+      'info'
+    );
+
+
+  } catch (error) {
 
     try {
 
       await scanner.start(
 
         {
-          facingMode: {
-            exact: 'environment'
-          }
+          facingMode:
+            'environment'
         },
 
         config,
@@ -629,8 +831,11 @@
 
 
       document
-        .getElementById('scannerLoading')
-        .classList.add('hidden');
+        .getElementById(
+          'scannerLoading'
+        )
+        .classList
+        .add('hidden');
 
 
       showStatus(
@@ -640,292 +845,269 @@
       );
 
 
-    } catch (error) {
+    } catch (secondError) {
 
-      /*
-        Если exact environment не поддерживается,
-        пробуем обычный environment.
-      */
-
-      try {
-
-        await scanner.start(
-
-          {
-            facingMode: 'environment'
-          },
-
-          config,
-
-          onScanSuccess,
-
-          onScanFailure
-
-        );
+      document
+        .getElementById(
+          'scannerLoading'
+        )
+        .textContent =
+        'Не удалось запустить камеру.';
 
 
-        document
-          .getElementById('scannerLoading')
-          .classList.add('hidden');
-
-
-        showStatus(
-          'scanStatus',
-          'Камера готова. Наведите её на QR-код.',
-          'info'
-        );
-
-
-      } catch (secondError) {
-
-        document
-          .getElementById('scannerLoading')
-          .textContent =
-          'Не удалось запустить камеру.';
-
-
-        showStatus(
-          'scanStatus',
-          'Не удалось получить доступ к камере.',
-          'error'
-        );
-
-      }
+      showStatus(
+        'scanStatus',
+        'Не удалось получить доступ к камере.',
+        'error'
+      );
 
     }
 
   }
 
-
-  // =====================================================
-  // УСПЕШНОЕ СКАНИРОВАНИЕ
-  // =====================================================
-
-  async function onScanSuccess(decodedText) {
-
-    const serialNumber =
-      String(decodedText || '').trim();
+}
 
 
-    if (!serialNumber) {
+// =====================================================
+// УСПЕШНОЕ СКАНИРОВАНИЕ
+// =====================================================
 
-      return;
+async function onScanSuccess(
+  decodedText
+) {
 
-    }
+  const serialNumber =
+    String(
+      decodedText || ''
+    ).trim();
 
 
-    /*
-      Защита от того, что камера
-      несколько раз подряд отдаёт
-      один и тот же QR.
-    */
+  if (!serialNumber) {
+    return;
+  }
 
-    const now =
-      Date.now();
+
+  const now =
+    Date.now();
+
+
+  /*
+   * Камера может несколько раз
+   * сообщить один и тот же QR.
+   */
+
+  if (
+    serialNumber ===
+      lastScannedText &&
+    now - lastScanTime < 2500
+  ) {
+
+    return;
+
+  }
+
+
+  lastScannedText =
+    serialNumber;
+
+  lastScanTime =
+    now;
+
+
+  if (processingScan) {
+    return;
+  }
+
+
+  processingScan = true;
+
+
+  showStatus(
+    'scanStatus',
+    'Проверяем ' +
+    serialNumber +
+    '...',
+    'info'
+  );
+
+
+  try {
+
+    const result =
+      await callGoogleScript(
+
+        'addScan',
+
+        {
+          serialNumber:
+            serialNumber,
+
+          du:
+            du,
+
+          executor:
+            executor
+        }
+
+      );
 
 
     if (
-      serialNumber === lastScannedText &&
-      now - lastScanTime < 2500
+      result &&
+      result.success
     ) {
 
-      return;
+      scanCount =
+        Number(result.count);
+
+
+      document
+        .getElementById(
+          'counter'
+        )
+        .textContent =
+        scanCount;
+
+
+      showStatus(
+        'scanStatus',
+        '✓ Код добавлен: ' +
+        result.serialNumber,
+        'success'
+      );
+
 
     }
 
+    else if (
+      result &&
+      result.duplicate
+    ) {
 
-    lastScannedText =
-      serialNumber;
-
-    lastScanTime =
-      now;
-
-
-    /*
-      Пока предыдущий запрос
-      не закончился, новый не отправляем.
-    */
-
-    if (processingScan) {
-
-      return;
-
-    }
-
-
-    processingScan = true;
-
-
-    showStatus(
-      'scanStatus',
-      'Проверяем ' + serialNumber + '...',
-      'info'
-    );
-
-
-    try {
-
-      const result =
-        await callGoogleScript(
-
-          'addScan',
-
-          {
-            serialNumber: serialNumber,
-            du: du,
-            executor: executor
-          }
-
-        );
-
-
-      if (result.success) {
+      if (
+        typeof result.count !==
+        'undefined'
+      ) {
 
         scanCount =
           Number(result.count);
 
 
         document
-          .getElementById('counter')
+          .getElementById(
+            'counter'
+          )
           .textContent =
           scanCount;
 
-
-        showStatus(
-          'scanStatus',
-          '✓ Код добавлен: ' +
-          result.serialNumber,
-          'success'
-        );
-
-
-      } else if (result.duplicate) {
-
-        /*
-          При дубле счётчик
-          НЕ увеличиваем.
-        */
-
-        if (
-          typeof result.count !== 'undefined'
-        ) {
-
-          scanCount =
-            Number(result.count);
-
-
-          document
-            .getElementById('counter')
-            .textContent =
-            scanCount;
-
-        }
-
-
-        showStatus(
-          'scanStatus',
-          '⚠ Такой номер уже есть: ' +
-          result.serialNumber,
-          'warning'
-        );
-
-
-      } else {
-
-        showStatus(
-          'scanStatus',
-          result.message ||
-          'Ошибка при записи.',
-          'error'
-        );
-
       }
 
-
-    } catch (error) {
 
       showStatus(
         'scanStatus',
-        'Нет связи со скриптом. ' +
-        'Повторите сканирование.',
+        '⚠ Такой номер уже есть: ' +
+        result.serialNumber,
+        'warning'
+      );
+
+
+    }
+
+    else {
+
+      showStatus(
+        'scanStatus',
+        result.message ||
+        'Ошибка при записи.',
         'error'
       );
 
-    } finally {
-
-      processingScan = false;
-
-    }
-
-  }
-
-
-  // =====================================================
-  // ОШИБКИ ПОИСКА QR
-  // =====================================================
-
-  function onScanFailure(error) {
-
-    /*
-      Здесь специально ничего не показываем.
-
-      Пока камера ищет QR-код,
-      библиотека постоянно сообщает,
-      что QR пока не найден.
-    */
-
-  }
-
-
-  // =====================================================
-  // СООБЩЕНИЯ
-  // =====================================================
-
-  function showStatus(
-    elementId,
-    message,
-    type
-  ) {
-
-    const element =
-      document.getElementById(elementId);
-
-
-    if (!element) {
-
-      return;
-
     }
 
 
-    element.className =
-      'status ' + type;
+  } catch (error) {
 
-
-    element.textContent =
-      message;
+    showStatus(
+      'scanStatus',
+      'Нет связи со скриптом. Повторите сканирование.',
+      'error'
+    );
 
   }
 
 
-  // =====================================================
-  // ENTER В ПОЛЕ ПАРОЛЯ
-  // =====================================================
+  processingScan = false;
 
-  document
-    .getElementById('password')
-    .addEventListener(
-      'keydown',
-      function(event) {
+}
 
-        if (event.key === 'Enter') {
 
-          login();
+// =====================================================
+// QR НЕ НАЙДЕН
+// =====================================================
 
-        }
+function onScanFailure(
+  error
+) {
+
+  /*
+   * Ничего не показываем.
+   */
+
+}
+
+
+// =====================================================
+// СООБЩЕНИЯ
+// =====================================================
+
+function showStatus(
+  elementId,
+  message,
+  type
+) {
+
+  const element =
+    document.getElementById(
+      elementId
+    );
+
+
+  if (!element) {
+    return;
+  }
+
+
+  element.className =
+    'status ' + type;
+
+
+  element.textContent =
+    message;
+
+}
+
+
+// =====================================================
+// ENTER В ПАРОЛЕ
+// =====================================================
+
+document
+  .getElementById('password')
+  .addEventListener(
+    'keydown',
+    function(event) {
+
+      if (
+        event.key ===
+        'Enter'
+      ) {
+
+        login();
 
       }
-    );
+
+    }
+  );
 
 </script>
 
