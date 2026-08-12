@@ -13,6 +13,7 @@
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -36,10 +37,10 @@
     }
 
     .card {
-      background: #fff;
+      background: white;
       padding: 18px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
       margin-bottom: 16px;
     }
 
@@ -138,6 +139,7 @@
       background: #e0ecff;
       color: #174d9c;
     }
+
   </style>
 </head>
 
@@ -147,11 +149,16 @@
 
   <h1>QR Сканер</h1>
 
+
+  <!-- ============================= -->
   <!-- ПАРОЛЬ -->
+  <!-- ============================= -->
 
   <div id="loginScreen" class="card">
 
-    <label for="password">Пароль</label>
+    <label for="password">
+      Пароль
+    </label>
 
     <input
       id="password"
@@ -172,11 +179,18 @@
   </div>
 
 
+  <!-- ============================= -->
   <!-- ИСПОЛНИТЕЛЬ -->
+  <!-- ============================= -->
 
-  <div id="workerScreen" class="card hidden">
+  <div
+    id="workerScreen"
+    class="card hidden"
+  >
 
-    <h2>Данные исполнителя</h2>
+    <h2>
+      Данные исполнителя
+    </h2>
 
     <label for="executor">
       Имя исполнителя
@@ -200,7 +214,9 @@
       autocomplete="off"
     >
 
-    <button onclick="startScanner()">
+    <button
+      onclick="startScanner()"
+    >
       Начать сканирование
     </button>
 
@@ -209,9 +225,14 @@
   </div>
 
 
+  <!-- ============================= -->
   <!-- СКАНЕР -->
+  <!-- ============================= -->
 
-  <div id="scannerScreen" class="hidden">
+  <div
+    id="scannerScreen"
+    class="hidden"
+  >
 
     <div class="card">
 
@@ -268,7 +289,7 @@ const GOOGLE_SCRIPT_URL =
 
 
 // =====================================================
-// ПЕРЕМЕННЫЕ
+// ОСНОВНЫЕ ПЕРЕМЕННЫЕ
 // =====================================================
 
 let executor = '';
@@ -277,9 +298,9 @@ let du = '';
 
 let scanner = null;
 
-let processingScan = false;
-
 let scanCount = 0;
+
+let processingScan = false;
 
 let lastScannedText = '';
 
@@ -287,13 +308,13 @@ let lastScanTime = 0;
 
 
 // =====================================================
-// JSONP ЗАПРОС К GOOGLE APPS SCRIPT
+// JSONP
 // =====================================================
 
 function callGoogleScript(
   action,
   data = {},
-  timeoutMs = 30000
+  timeoutMs = 12000
 ) {
 
   return new Promise(function(resolve, reject) {
@@ -432,9 +453,9 @@ function callGoogleScript(
       };
 
 
-    document
-      .head
-      .appendChild(script);
+    document.head.appendChild(
+      script
+    );
 
   });
 
@@ -442,7 +463,7 @@ function callGoogleScript(
 
 
 // =====================================================
-// ВХОД ПО ПАРОЛЮ
+// ВХОД
 // =====================================================
 
 async function login() {
@@ -486,7 +507,7 @@ async function login() {
         {
           password: password
         },
-        15000
+        12000
       );
 
 
@@ -511,6 +532,13 @@ async function login() {
         .remove('hidden');
 
 
+      document
+        .getElementById(
+          'password'
+        )
+        .value = '';
+
+
     } else {
 
       showStatus(
@@ -530,14 +558,13 @@ async function login() {
       'error'
     );
 
-  } finally {
-
-    button.disabled = false;
-
-    button.textContent =
-      'Войти';
-
   }
+
+
+  button.disabled = false;
+
+  button.textContent =
+    'Войти';
 
 }
 
@@ -620,10 +647,8 @@ function startScanner() {
     du;
 
 
-  // Камера запускается сразу.
   startQrScanner();
 
-  // Счётчик загружается отдельно.
   loadCounter();
 
 }
@@ -641,7 +666,7 @@ async function loadCounter() {
       await callGoogleScript(
         'getScanCount',
         {},
-        15000
+        10000
       );
 
 
@@ -654,20 +679,14 @@ async function loadCounter() {
         Number(result.count) || 0;
 
 
-      document
-        .getElementById(
-          'counter'
-        )
-        .textContent =
-        scanCount;
+      updateCounter();
 
     }
 
   } catch (error) {
 
-    // Камеру не останавливаем.
-    // Ошибку счётчика пользователю
-    // отдельно не показываем.
+    // Ничего не делаем.
+    // Камера продолжает работать.
 
   }
 
@@ -675,7 +694,23 @@ async function loadCounter() {
 
 
 // =====================================================
-// ЗАПУСК КАМЕРЫ
+// ОБНОВЛЕНИЕ СЧЁТЧИКА
+// =====================================================
+
+function updateCounter() {
+
+  document
+    .getElementById(
+      'counter'
+    )
+    .textContent =
+    scanCount;
+
+}
+
+
+// =====================================================
+// КАМЕРА
 // =====================================================
 
 async function startQrScanner() {
@@ -750,21 +785,6 @@ async function startQrScanner() {
     );
 
 
-    document
-      .getElementById(
-        'scannerLoading'
-      )
-      .classList
-      .add('hidden');
-
-
-    showStatus(
-      'scanStatus',
-      'Камера готова. Наведите её на QR-код.',
-      'info'
-    );
-
-
   } catch (error) {
 
     try {
@@ -784,21 +804,6 @@ async function startQrScanner() {
       );
 
 
-      document
-        .getElementById(
-          'scannerLoading'
-        )
-        .classList
-        .add('hidden');
-
-
-      showStatus(
-        'scanStatus',
-        'Камера готова. Наведите её на QR-код.',
-        'info'
-      );
-
-
     } catch (secondError) {
 
       document
@@ -815,9 +820,26 @@ async function startQrScanner() {
         'error'
       );
 
+      return;
+
     }
 
   }
+
+
+  document
+    .getElementById(
+      'scannerLoading'
+    )
+    .classList
+    .add('hidden');
+
+
+  showStatus(
+    'scanStatus',
+    'Камера готова. Наведите её на QR-код.',
+    'info'
+  );
 
 }
 
@@ -845,13 +867,15 @@ async function onScanSuccess(
     Date.now();
 
 
-  // Защита от многократного
-  // считывания одного QR камерой.
+  /*
+   * Камера может отдавать один QR
+   * много раз подряд.
+   */
 
   if (
     serialNumber ===
       lastScannedText &&
-    now - lastScanTime < 2500
+    now - lastScanTime < 3000
   ) {
 
     return;
@@ -866,9 +890,6 @@ async function onScanSuccess(
     now;
 
 
-  // Не отправляем второй запрос,
-  // пока первый не закончен.
-
   if (processingScan) {
     return;
   }
@@ -879,19 +900,16 @@ async function onScanSuccess(
 
   showStatus(
     'scanStatus',
-    'Проверяем ' +
+    'Обрабатываем ' +
     serialNumber +
     '...',
     'info'
   );
 
 
-  let serverResult = null;
-
-
   try {
 
-    serverResult =
+    const result =
       await callGoogleScript(
 
         'addScan',
@@ -907,48 +925,37 @@ async function onScanSuccess(
             executor
         },
 
-        30000
+        10000
 
       );
 
 
-    // ==========================================
-    // УСПЕШНО ДОБАВЛЕНО
-    // ==========================================
+    /*
+     * ==========================================
+     * УНИКАЛЬНЫЙ НОМЕР
+     * ==========================================
+     */
 
     if (
-      serverResult &&
-      serverResult.success === true
+      result &&
+      result.success === true
     ) {
 
       scanCount =
         Number(
-          serverResult.count
-        );
+          result.count
+        ) || scanCount + 1;
 
 
-      document
-        .getElementById(
-          'counter'
-        )
-        .textContent =
-        scanCount;
+      updateCounter();
 
 
       showStatus(
         'scanStatus',
         '✓ Код добавлен: ' +
-        serverResult.serialNumber,
+        result.serialNumber,
         'success'
       );
-
-
-      /*
-       * Дополнительно синхронизируем
-       * счётчик с Google Sheets.
-       */
-
-      loadCounter();
 
 
       processingScan = false;
@@ -958,40 +965,35 @@ async function onScanSuccess(
     }
 
 
-    // ==========================================
-    // ДУБЛЬ
-    // ==========================================
+    /*
+     * ==========================================
+     * ДУБЛЬ
+     * ==========================================
+     */
 
     if (
-      serverResult &&
-      serverResult.duplicate === true
+      result &&
+      result.duplicate === true
     ) {
 
       if (
-        typeof serverResult.count !==
+        typeof result.count !==
         'undefined'
       ) {
 
         scanCount =
           Number(
-            serverResult.count
+            result.count
           );
 
-
-        document
-          .getElementById(
-            'counter'
-          )
-          .textContent =
-          scanCount;
+        updateCounter();
 
       }
 
 
       showStatus(
         'scanStatus',
-        '⚠ Такой номер уже есть: ' +
-        serverResult.serialNumber,
+        '⚠ Данный серийный номер уже был отсканирован.',
         'warning'
       );
 
@@ -1003,130 +1005,177 @@ async function onScanSuccess(
     }
 
 
-    // ==========================================
-    // ДРУГАЯ ОШИБКА СЕРВЕРА
-    // ==========================================
+    /*
+     * ==========================================
+     * ОШИБКА
+     * ==========================================
+     */
 
     showStatus(
       'scanStatus',
-      (
-        serverResult &&
-        serverResult.message
-      )
-        ? serverResult.message
-        : 'Ошибка при записи.',
+      result &&
+      result.message
+        ? result.message
+        : 'Ошибка при обработке кода.',
       'error'
     );
+
+
+    processingScan = false;
 
 
   } catch (error) {
 
     /*
-     * ВАЖНЫЙ МОМЕНТ.
+     * ==========================================
+     * ОТВЕТ НЕ ПРИШЁЛ
+     * ==========================================
      *
-     * Запрос мог дойти до Apps Script
-     * и записать номер в таблицу,
-     * но ответ мог потеряться.
+     * Очень важная часть.
      *
-     * Поэтому НЕ показываем сразу
-     * "Нет связи со скриптом".
+     * Номер мог уже попасть в таблицу,
+     * а ответ Apps Script просто не успел
+     * вернуться на iPhone.
      *
-     * Сначала через небольшую паузу
-     * запрашиваем актуальный счётчик.
+     * Поэтому НЕ просим пользователя
+     * сканировать QR повторно.
      */
 
-    await new Promise(
-      function(resolve) {
-        setTimeout(
-          resolve,
-          700
-        );
-      }
+    showStatus(
+      'scanStatus',
+      'Проверяем результат...',
+      'info'
     );
 
 
-    try {
+    /*
+     * Даём Apps Script немного времени
+     * закончить запись.
+     */
 
-      const counterResult =
-        await callGoogleScript(
-          'getScanCount',
-          {},
-          15000
-        );
+    await sleep(1000);
 
 
-      if (
-        counterResult &&
-        counterResult.success === true
-      ) {
+    /*
+     * Несколько раз обновляем счётчик.
+     * Если он увеличился — запись произошла.
+     */
 
-        const newCount =
-          Number(
-            counterResult.count
+    let confirmed = false;
+
+
+    for (
+      let attempt = 0;
+      attempt < 3;
+      attempt++
+    ) {
+
+      try {
+
+        const counterResult =
+          await callGoogleScript(
+            'getScanCount',
+            {},
+            5000
           );
 
-
-        /*
-         * Если количество изменилось,
-         * считаем, что скан всё-таки
-         * был записан.
-         */
 
         if (
-          newCount !== scanCount
+          counterResult &&
+          counterResult.success === true
         ) {
 
-          scanCount =
-            newCount;
+          const newCount =
+            Number(
+              counterResult.count
+            );
 
 
-          document
-            .getElementById(
-              'counter'
-            )
-            .textContent =
-            scanCount;
+          if (
+            newCount > scanCount
+          ) {
 
+            scanCount =
+              newCount;
 
-          showStatus(
-            'scanStatus',
-            '✓ Код обработан.',
-            'success'
-          );
+            updateCounter();
 
+            confirmed = true;
 
-          processingScan = false;
+            break;
 
-          return;
+          }
 
         }
+
+      } catch (e) {
+
+        // Пробуем ещё раз.
 
       }
 
 
-    } catch (counterError) {
+      await sleep(700);
 
-      // Ниже будет сообщение пользователю.
+    }
+
+
+    if (confirmed) {
+
+      showStatus(
+        'scanStatus',
+        '✓ Код добавлен: ' +
+        serialNumber,
+        'success'
+      );
+
+
+      processingScan = false;
+
+      return;
 
     }
 
 
     /*
      * Если счётчик не изменился,
-     * тогда действительно не знаем,
-     * дошёл ли запрос.
+     * не отправляем автоматически
+     * повторный addScan.
+     *
+     * Иначе можно получить ненужную
+     * повторную запись/гонку запросов.
      */
 
     showStatus(
       'scanStatus',
-      'Не удалось получить ответ от скрипта. Проверьте таблицу.',
+      'Ответ от скрипта задерживается. Проверьте таблицу — повторно сканировать пока не нужно.',
       'warning'
     );
 
+
+    processingScan = false;
+
   }
 
+}
 
-  processingScan = false;
+
+// =====================================================
+// ЗАДЕРЖКА
+// =====================================================
+
+function sleep(ms) {
+
+  return new Promise(
+    function(resolve) {
+
+      setTimeout(
+        resolve,
+        ms
+      );
+
+    }
+  );
 
 }
 
@@ -1138,14 +1187,13 @@ async function onScanSuccess(
 function onScanFailure(error) {
 
   // Ничего не показываем.
-  // Это нормальное состояние камеры,
-  // пока QR-код не попал в кадр.
+  // Это нормальная работа сканера.
 
 }
 
 
 // =====================================================
-// СООБЩЕНИЯ
+// СТАТУС
 // =====================================================
 
 function showStatus(
@@ -1176,7 +1224,7 @@ function showStatus(
 
 
 // =====================================================
-// ENTER В ПОЛЕ ПАРОЛЯ
+// ENTER В ПАРОЛЕ
 // =====================================================
 
 document
