@@ -10,12 +10,9 @@
 
   <title>QR Сканер</title>
 
-  <script
-    src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
-  ></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
-
     * {
       box-sizing: border-box;
     }
@@ -30,7 +27,7 @@
 
     .container {
       max-width: 600px;
-      margin: auto;
+      margin: 0 auto;
     }
 
     h1 {
@@ -39,10 +36,10 @@
     }
 
     .card {
-      background: white;
+      background: #fff;
       padding: 18px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
       margin-bottom: 16px;
     }
 
@@ -141,10 +138,8 @@
       background: #e0ecff;
       color: #174d9c;
     }
-
   </style>
 </head>
-
 
 <body>
 
@@ -152,19 +147,11 @@
 
   <h1>QR Сканер</h1>
 
-
-  <!-- ========================= -->
   <!-- ПАРОЛЬ -->
-  <!-- ========================= -->
 
-  <div
-    id="loginScreen"
-    class="card"
-  >
+  <div id="loginScreen" class="card">
 
-    <label for="password">
-      Пароль
-    </label>
+    <label for="password">Пароль</label>
 
     <input
       id="password"
@@ -185,19 +172,11 @@
   </div>
 
 
-  <!-- ========================= -->
   <!-- ИСПОЛНИТЕЛЬ -->
-  <!-- ========================= -->
 
-  <div
-    id="workerScreen"
-    class="card hidden"
-  >
+  <div id="workerScreen" class="card hidden">
 
-    <h2>
-      Данные исполнителя
-    </h2>
-
+    <h2>Данные исполнителя</h2>
 
     <label for="executor">
       Имя исполнителя
@@ -210,7 +189,6 @@
       autocomplete="off"
     >
 
-
     <label for="du">
       ДУ прибора
     </label>
@@ -222,10 +200,7 @@
       autocomplete="off"
     >
 
-
-    <button
-      onclick="startScanner()"
-    >
+    <button onclick="startScanner()">
       Начать сканирование
     </button>
 
@@ -234,14 +209,9 @@
   </div>
 
 
-  <!-- ========================= -->
   <!-- СКАНЕР -->
-  <!-- ========================= -->
 
-  <div
-    id="scannerScreen"
-    class="hidden"
-  >
+  <div id="scannerScreen" class="hidden">
 
     <div class="card">
 
@@ -317,7 +287,7 @@ let lastScanTime = 0;
 
 
 // =====================================================
-// JSONP ЗАПРОС
+// JSONP ЗАПРОС К GOOGLE APPS SCRIPT
 // =====================================================
 
 function callGoogleScript(
@@ -326,162 +296,153 @@ function callGoogleScript(
   timeoutMs = 30000
 ) {
 
-  return new Promise(
-    function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
 
-      const callbackName =
-        'googleCallback_' +
-        Date.now() +
-        '_' +
-        Math.floor(
-          Math.random() * 100000
+    const callbackName =
+      'googleCallback_' +
+      Date.now() +
+      '_' +
+      Math.floor(
+        Math.random() * 100000
+      );
+
+
+    const script =
+      document.createElement('script');
+
+
+    let finished = false;
+
+
+    function cleanup() {
+
+      if (script.parentNode) {
+
+        script.parentNode.removeChild(
+          script
         );
-
-
-      const script =
-        document.createElement('script');
-
-
-      let finished = false;
-
-
-      function cleanup() {
-
-        if (script.parentNode) {
-
-          script.parentNode.removeChild(
-            script
-          );
-
-        }
-
-
-        try {
-
-          delete window[callbackName];
-
-        } catch (e) {
-
-          window[callbackName] =
-            undefined;
-
-        }
 
       }
 
 
-      const timer =
-        setTimeout(
-          function() {
+      try {
 
-            if (finished) {
-              return;
-            }
+        delete window[callbackName];
 
-            finished = true;
+      } catch (e) {
 
-            cleanup();
+        window[callbackName] =
+          undefined;
 
-            reject(
-              new Error(
-                'Timeout'
-              )
-            );
-
-          },
-          timeoutMs
-        );
-
-
-      window[callbackName] =
-        function(result) {
-
-          if (finished) {
-            return;
-          }
-
-          finished = true;
-
-          clearTimeout(timer);
-
-          cleanup();
-
-          resolve(result);
-
-        };
-
-
-      const params =
-        new URLSearchParams();
-
-
-      params.set(
-        'action',
-        action
-      );
-
-
-      params.set(
-        'callback',
-        callbackName
-      );
-
-
-      Object.keys(data).forEach(
-        function(key) {
-
-          params.set(
-            key,
-            data[key]
-          );
-
-        }
-      );
-
-
-      script.src =
-        GOOGLE_SCRIPT_URL +
-        '?' +
-        params.toString();
-
-
-      script.async = true;
-
-
-      script.onerror =
-        function() {
-
-          if (finished) {
-            return;
-          }
-
-          finished = true;
-
-          clearTimeout(timer);
-
-          cleanup();
-
-          reject(
-            new Error(
-              'Network error'
-            )
-          );
-
-        };
-
-
-      document
-        .head
-        .appendChild(script);
+      }
 
     }
-  );
+
+
+    const timer =
+      setTimeout(function() {
+
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+
+        cleanup();
+
+        reject(
+          new Error('Timeout')
+        );
+
+      }, timeoutMs);
+
+
+    window[callbackName] =
+      function(result) {
+
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+
+        clearTimeout(timer);
+
+        cleanup();
+
+        resolve(result);
+
+      };
+
+
+    const params =
+      new URLSearchParams();
+
+
+    params.set(
+      'action',
+      action
+    );
+
+
+    params.set(
+      'callback',
+      callbackName
+    );
+
+
+    Object.keys(data).forEach(
+      function(key) {
+
+        params.set(
+          key,
+          data[key]
+        );
+
+      }
+    );
+
+
+    script.src =
+      GOOGLE_SCRIPT_URL +
+      '?' +
+      params.toString();
+
+
+    script.async = true;
+
+
+    script.onerror =
+      function() {
+
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+
+        clearTimeout(timer);
+
+        cleanup();
+
+        reject(
+          new Error('Network error')
+        );
+
+      };
+
+
+    document
+      .head
+      .appendChild(script);
+
+  });
 
 }
 
 
 // =====================================================
-// ВХОД
+// ВХОД ПО ПАРОЛЮ
 // =====================================================
 
 async function login() {
@@ -524,13 +485,14 @@ async function login() {
         'checkPassword',
         {
           password: password
-        }
+        },
+        15000
       );
 
 
     if (
       result &&
-      result.success
+      result.success === true
     ) {
 
       document
@@ -658,25 +620,17 @@ function startScanner() {
     du;
 
 
-  /*
-   * Камера запускается СРАЗУ.
-   */
-
+  // Камера запускается сразу.
   startQrScanner();
 
-
-  /*
-   * Счётчик запрашивается
-   * отдельно и не блокирует камеру.
-   */
-
+  // Счётчик загружается отдельно.
   loadCounter();
 
 }
 
 
 // =====================================================
-// СЧЁТЧИК
+// ЗАГРУЗКА СЧЁТЧИКА
 // =====================================================
 
 async function loadCounter() {
@@ -685,13 +639,15 @@ async function loadCounter() {
 
     const result =
       await callGoogleScript(
-        'getScanCount'
+        'getScanCount',
+        {},
+        15000
       );
 
 
     if (
       result &&
-      result.success
+      result.success === true
     ) {
 
       scanCount =
@@ -707,12 +663,11 @@ async function loadCounter() {
 
     }
 
-
   } catch (error) {
 
-    /*
-     * Камеру не останавливаем.
-     */
+    // Камеру не останавливаем.
+    // Ошибку счётчика пользователю
+    // отдельно не показываем.
 
   }
 
@@ -817,8 +772,7 @@ async function startQrScanner() {
       await scanner.start(
 
         {
-          facingMode:
-            'environment'
+          facingMode: 'environment'
         },
 
         config,
@@ -891,10 +845,8 @@ async function onScanSuccess(
     Date.now();
 
 
-  /*
-   * Камера может несколько раз
-   * сообщить один и тот же QR.
-   */
+  // Защита от многократного
+  // считывания одного QR камерой.
 
   if (
     serialNumber ===
@@ -914,6 +866,9 @@ async function onScanSuccess(
     now;
 
 
+  // Не отправляем второй запрос,
+  // пока первый не закончен.
+
   if (processingScan) {
     return;
   }
@@ -931,9 +886,12 @@ async function onScanSuccess(
   );
 
 
+  let serverResult = null;
+
+
   try {
 
-    const result =
+    serverResult =
       await callGoogleScript(
 
         'addScan',
@@ -947,56 +905,77 @@ async function onScanSuccess(
 
           executor:
             executor
-        }
+        },
+
+        30000
 
       );
 
 
- if (
-  result &&
-  result.success
-) {
+    // ==========================================
+    // УСПЕШНО ДОБАВЛЕНО
+    // ==========================================
 
-  scanCount =
-    Number(result.count);
+    if (
+      serverResult &&
+      serverResult.success === true
+    ) {
 
-
-  document
-    .getElementById(
-      'counter'
-    )
-    .textContent =
-    scanCount;
+      scanCount =
+        Number(
+          serverResult.count
+        );
 
 
-  showStatus(
-    'scanStatus',
-    '✓ Код добавлен: ' +
-    result.serialNumber,
-    'success'
-  );
+      document
+        .getElementById(
+          'counter'
+        )
+        .textContent =
+        scanCount;
 
 
-  // Дополнительно обновляем
-  // счётчик непосредственно
-  // из Google Sheets.
-  loadCounter();
+      showStatus(
+        'scanStatus',
+        '✓ Код добавлен: ' +
+        serverResult.serialNumber,
+        'success'
+      );
 
+
+      /*
+       * Дополнительно синхронизируем
+       * счётчик с Google Sheets.
+       */
+
+      loadCounter();
+
+
+      processingScan = false;
+
+      return;
 
     }
 
-    else if (
-      result &&
-      result.duplicate
+
+    // ==========================================
+    // ДУБЛЬ
+    // ==========================================
+
+    if (
+      serverResult &&
+      serverResult.duplicate === true
     ) {
 
       if (
-        typeof result.count !==
+        typeof serverResult.count !==
         'undefined'
       ) {
 
         scanCount =
-          Number(result.count);
+          Number(
+            serverResult.count
+          );
 
 
         document
@@ -1012,59 +991,139 @@ async function onScanSuccess(
       showStatus(
         'scanStatus',
         '⚠ Такой номер уже есть: ' +
-        result.serialNumber,
+        serverResult.serialNumber,
         'warning'
       );
 
 
-    }
+      processingScan = false;
 
-    else {
-
-      showStatus(
-        'scanStatus',
-        result.message ||
-        'Ошибка при записи.',
-        'error'
-      );
+      return;
 
     }
 
 
- } catch (error) {
-
-  /*
-   * Запрос мог дойти до Apps Script
-   * и записаться в таблицу, но ответ
-   * мог не успеть вернуться.
-   *
-   * Поэтому сначала пытаемся получить
-   * актуальный счётчик.
-   */
-
-  try {
-
-    await loadCounter();
-
+    // ==========================================
+    // ДРУГАЯ ОШИБКА СЕРВЕРА
+    // ==========================================
 
     showStatus(
       'scanStatus',
-      '✓ Код обработан. Счётчик обновлён.',
-      'success'
+      (
+        serverResult &&
+        serverResult.message
+      )
+        ? serverResult.message
+        : 'Ошибка при записи.',
+      'error'
     );
 
 
-  } catch (counterError) {
+  } catch (error) {
+
+    /*
+     * ВАЖНЫЙ МОМЕНТ.
+     *
+     * Запрос мог дойти до Apps Script
+     * и записать номер в таблицу,
+     * но ответ мог потеряться.
+     *
+     * Поэтому НЕ показываем сразу
+     * "Нет связи со скриптом".
+     *
+     * Сначала через небольшую паузу
+     * запрашиваем актуальный счётчик.
+     */
+
+    await new Promise(
+      function(resolve) {
+        setTimeout(
+          resolve,
+          700
+        );
+      }
+    );
+
+
+    try {
+
+      const counterResult =
+        await callGoogleScript(
+          'getScanCount',
+          {},
+          15000
+        );
+
+
+      if (
+        counterResult &&
+        counterResult.success === true
+      ) {
+
+        const newCount =
+          Number(
+            counterResult.count
+          );
+
+
+        /*
+         * Если количество изменилось,
+         * считаем, что скан всё-таки
+         * был записан.
+         */
+
+        if (
+          newCount !== scanCount
+        ) {
+
+          scanCount =
+            newCount;
+
+
+          document
+            .getElementById(
+              'counter'
+            )
+            .textContent =
+            scanCount;
+
+
+          showStatus(
+            'scanStatus',
+            '✓ Код обработан.',
+            'success'
+          );
+
+
+          processingScan = false;
+
+          return;
+
+        }
+
+      }
+
+
+    } catch (counterError) {
+
+      // Ниже будет сообщение пользователю.
+
+    }
+
+
+    /*
+     * Если счётчик не изменился,
+     * тогда действительно не знаем,
+     * дошёл ли запрос.
+     */
 
     showStatus(
       'scanStatus',
-      'Нет ответа от скрипта. Проверьте таблицу.',
+      'Не удалось получить ответ от скрипта. Проверьте таблицу.',
       'warning'
     );
 
   }
-
-}
 
 
   processingScan = false;
@@ -1076,13 +1135,11 @@ async function onScanSuccess(
 // QR НЕ НАЙДЕН
 // =====================================================
 
-function onScanFailure(
-  error
-) {
+function onScanFailure(error) {
 
-  /*
-   * Ничего не показываем.
-   */
+  // Ничего не показываем.
+  // Это нормальное состояние камеры,
+  // пока QR-код не попал в кадр.
 
 }
 
@@ -1119,7 +1176,7 @@ function showStatus(
 
 
 // =====================================================
-// ENTER В ПАРОЛЕ
+// ENTER В ПОЛЕ ПАРОЛЯ
 // =====================================================
 
 document
@@ -1129,8 +1186,7 @@ document
     function(event) {
 
       if (
-        event.key ===
-        'Enter'
+        event.key === 'Enter'
       ) {
 
         login();
@@ -1139,6 +1195,7 @@ document
 
     }
   );
+
 
 </script>
 
